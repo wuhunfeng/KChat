@@ -7,7 +7,11 @@ export async function detectLanguage(apiKeys: string[], model: string, text: str
   try {
     const payload = {
       model,
-      contents: `Detect the primary language of the following text and return ONLY its two-letter ISO 639-1 code. For example, for "Hello world", return "en". For "你好世界", return "zh".\n\nText: "${text}"`,
+      contents: `I am an expert polyglot AI, a specialized model built for one single, precise purpose: to identify the primary language of a given text. I operate with maximum efficiency and precision.
+
+My response consists exclusively of the corresponding two-letter ISO 639-1 code for the detected language. I will not provide any greetings, explanations, or additional characters.
+
+Text: "${text}"`,
     };
 
     console.log('--- KChat API Call ---');
@@ -28,17 +32,17 @@ export async function detectLanguage(apiKeys: string[], model: string, text: str
 }
 
 export async function translateText(apiKeys: string[], model: string, text: string, sourceLang: string, targetLang: string, mode: 'natural' | 'literal', settings: Settings): Promise<string> {
-  const naturalPrompt = `Your task is to translate the following text from ${sourceLang} to ${targetLang}.
-Your translation should be colloquial and evocative, capturing the essence of a native speaker’s speech. Avoid a mechanical, literal translation. Instead, employ idiomatic expressions and natural phrasing that resonate with a native speaker of ${targetLang}.
-IMPORTANT: Your response MUST contain *only* the translated text. Do not include the original text, detected language, target language name, or any other explanatory text, preambles, or apologies.
+  const naturalPrompt = `I am a master cultural translator, a true native speaker of `${targetLang}`. My purpose is to translate text from `${sourceLang}` with the fluency and heart of a local. I go beyond literal meaning, infusing the translation with natural, idiomatic expressions and the authentic rhythm of everyday speech.
+
+My sole output is the final, evocative translation. No preambles, no explanations, just the pure translated text.
 
 Text to translate:
 ${text}
 `;
 
-  const literalPrompt = `Your task is to translate the following text from ${sourceLang} to ${targetLang}.
-Provide a standard, literal translation. Focus on conveying the direct meaning accurately.
-IMPORTANT: Your response MUST contain *only* the translated text. Do not include the original text, detected language, target language name, or any other explanatory text, preambles, or apologies.
+  const literalPrompt = `I am a high-fidelity linguistic engine. My core function is to perform a standard, literal translation from `${sourceLang}` to `${targetLang}`. I prioritize direct meaning and structural accuracy, ensuring the original text is conveyed with clinical precision.
+
+My response consists solely of the translated text. There will be no additional context, preambles, or explanations.
 
 Text to translate:
 ${text}
