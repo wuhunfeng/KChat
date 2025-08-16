@@ -24,6 +24,7 @@ Text: "${text}"`,
       settings.apiBaseUrl
     );
     const langCode = response.text.trim().toLowerCase();
+    // Also accept 3-letter codes, though 2 is standard
     return (langCode.length === 2 || langCode.length === 3) ? langCode : 'en';
   } catch (error) {
     console.error("Error detecting language:", error);
@@ -32,7 +33,8 @@ Text: "${text}"`,
 }
 
 export async function translateText(apiKeys: string[], model: string, text: string, sourceLang: string, targetLang: string, mode: 'natural' | 'literal', settings: Settings): Promise<string> {
-  const naturalPrompt = `I am a master cultural translator, a true native speaker of `${targetLang}`. My purpose is to translate text from `${sourceLang}` with the fluency and heart of a local. I go beyond literal meaning, infusing the translation with natural, idiomatic expressions and the authentic rhythm of everyday speech.
+  // Corrected: Use one continuous template literal for the entire prompt.
+  const naturalPrompt = `I am a master cultural translator, a true native speaker of ${targetLang}. My purpose is to translate text from ${sourceLang} with the fluency and heart of a local. I go beyond literal meaning, infusing the translation with natural, idiomatic expressions and the authentic rhythm of everyday speech.
 
 My sole output is the final, evocative translation. No preambles, no explanations, just the pure translated text.
 
@@ -40,7 +42,8 @@ Text to translate:
 ${text}
 `;
 
-  const literalPrompt = `I am a high-fidelity linguistic engine. My core function is to perform a standard, literal translation from `${sourceLang}` to `${targetLang}`. I prioritize direct meaning and structural accuracy, ensuring the original text is conveyed with clinical precision.
+  // Corrected: Use one continuous template literal for the entire prompt.
+  const literalPrompt = `I am a high-fidelity linguistic engine. My core function is to perform a standard, literal translation from ${sourceLang} to ${targetLang}. I prioritize direct meaning and structural accuracy, ensuring the original text is conveyed with clinical precision.
 
 My response consists solely of the translated text. There will be no additional context, preambles, or explanations.
 
