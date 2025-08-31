@@ -1,12 +1,11 @@
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Persona, Settings } from '../types';
 import { Icon } from './Icon';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { generatePersonaUpdate } from '../services/geminiService';
 import { fileToData } from '../utils/fileUtils';
+import { Switch } from './Switch';
+import { useToast } from '../contexts/ToastContext';
 
 const newPersonaTemplate: Persona = {
   id: '',
@@ -33,6 +32,7 @@ interface BuilderMessage {
 
 const AIBuilder: React.FC<{ persona: Persona, onUpdate: (update: Partial<Persona>) => void, settings: Settings }> = ({ persona, onUpdate, settings }) => {
     const { t } = useLocalization();
+    const { addToast } = useToast();
     const [messages, setMessages] = useState<BuilderMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -52,9 +52,15 @@ const AIBuilder: React.FC<{ persona: Persona, onUpdate: (update: Partial<Persona
         setMessages(prev => [...prev, { id: statusMessageId, role: 'status', content: t('builderApplying') }]);
 
         try {
-            const apiKey = settings.apiKey || process.env.API_KEY;
-            if (!apiKey) throw new Error("API Key not set.");
-            const { personaUpdate, explanation } = await generatePersonaUpdate(apiKey, settings.personaBuilderModel, persona, userInput);
+            const apiKeys = settings.apiKey && settings.apiKey.length > 0
+                ? settings.apiKey
+                : (process.env.API_KEY ? [process.env.API_KEY] : []);
+
+            if (apiKeys.length === 0) {
+                throw new Error("API Key not set.");
+            }
+
+            const { personaUpdate, explanation } = await generatePersonaUpdate(apiKeys, settings.defaultModel, persona, userInput, settings);
             
             onUpdate(personaUpdate);
 
@@ -66,11 +72,13 @@ const AIBuilder: React.FC<{ persona: Persona, onUpdate: (update: Partial<Persona
 
         } catch (error) {
             console.error(error);
-            setMessages(prev => prev.map(m =>
-                m.id === statusMessageId
-                ? { ...m, role: 'model', content: "Sorry, I couldn't process that. Please try again." }
-                : m
-            ));
+            const errorMessage = (error as Error).message.includes("API Key not set") 
+                ? "API Key not set. Please add it in Settings."
+                : "Sorry, I couldn't process that. Please try again.";
+            
+            addToast(errorMessage, 'error');
+
+            setMessages(prev => prev.filter(m => m.id !== statusMessageId));
         } finally {
             setIsLoading(false);
         }
@@ -119,6 +127,7 @@ interface PersonaEditorProps {
 
 export const PersonaEditor: React.FC<PersonaEditorProps> = ({ personaToEdit, onSave, onClose, settings }) => {
   const { t } = useLocalization();
+  const { addToast } = useToast();
   const [persona, setPersona] = useState<Persona>(personaToEdit || newPersonaTemplate);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,13 +139,8 @@ export const PersonaEditor: React.FC<PersonaEditorProps> = ({ personaToEdit, onS
     setPersona(prev => {
         const newTools = { ...prev.tools, ...update.tools };
         
-        // Enforce mutual exclusivity
-        if (update.tools?.codeExecution === true) {
-            newTools.urlContext = false;
-        }
-        if (update.tools?.urlContext === true) {
-            newTools.codeExecution = false;
-        }
+        if (update.tools?.codeExecution === true) newTools.urlContext = false;
+        if (update.tools?.urlContext === true) newTools.codeExecution = false;
 
         return { ...prev, ...update, tools: newTools, avatar: { ...prev.avatar, ...update.avatar } };
     });
@@ -150,7 +154,7 @@ export const PersonaEditor: React.FC<PersonaEditorProps> = ({ personaToEdit, onS
         handleUpdate({ avatar: { type: 'base64', value: `data:${file.type};base64,${data}` } });
       } catch (error) {
         console.error("Error processing avatar file:", error);
-        alert("Could not load image.");
+        addToast("Could not load image.", 'error');
       }
     }
   };
@@ -159,13 +163,13 @@ export const PersonaEditor: React.FC<PersonaEditorProps> = ({ personaToEdit, onS
     if(persona.name.trim() && persona.bio.trim() && persona.systemPrompt.trim()) {
       onSave(persona);
     } else {
-      alert("Please fill out all fields before saving.");
+      addToast("Please fill out all fields before saving.", 'error');
     }
   };
 
   return (
-    <main className="persona-editor-container">
-        <div className="persona-editor-form-pane">
+    <main className="persona-editor-container flex-col md:flex-row">
+        <div className="persona-editor-form-pane w-full md:w-auto border-b-2 md:border-b-0 md:border-r-2 border-[var(--glass-border)]">
             <header className="persona-editor-header">
                 <h2>{persona.isNew ? t('createPersona') : t('editPersona')}</h2>
                 <div className="flex gap-2">
@@ -204,21 +208,21 @@ export const PersonaEditor: React.FC<PersonaEditorProps> = ({ personaToEdit, onS
                     <div className="p-3 rounded-[var(--radius-2xl)] glass-pane flex flex-col gap-2">
                         <div className="flex justify-between items-center">
                             <label className="font-medium">{t('googleSearch')}</label>
-                            <label className="switch"><input type="checkbox" checked={persona.tools.googleSearch} onChange={e => handleUpdate({tools: {...persona.tools, googleSearch: e.target.checked}})} /><span className="switch-slider"></span></label>
+                            <Switch size="sm" checked={persona.tools.googleSearch} onChange={e => handleUpdate({tools: {...persona.tools, googleSearch: e.target.checked}})} />
                         </div>
                         <div className="flex justify-between items-center">
                             <label className="font-medium">{t('codeExecution')}</label>
-                            <label className="switch"><input type="checkbox" checked={persona.tools.codeExecution} onChange={e => handleUpdate({tools: { ...persona.tools, codeExecution: e.target.checked }})} /><span className="switch-slider"></span></label>
+                            <Switch size="sm" checked={persona.tools.codeExecution} onChange={e => handleUpdate({tools: { ...persona.tools, codeExecution: e.target.checked }})} />
                         </div>
                         <div className="flex justify-between items-center">
                             <label className="font-medium">{t('urlContext')}</label>
-                            <label className="switch"><input type="checkbox" checked={persona.tools.urlContext} onChange={e => handleUpdate({tools: { ...persona.tools, urlContext: e.target.checked }})} /><span className="switch-slider"></span></label>
+                            <Switch size="sm" checked={persona.tools.urlContext} onChange={e => handleUpdate({tools: { ...persona.tools, urlContext: e.target.checked }})} />
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div className="persona-editor-builder-pane">
+        <div className="persona-editor-builder-pane w-full md:w-auto h-96 md:h-auto">
           <AIBuilder persona={persona} onUpdate={handleUpdate} settings={settings} />
         </div>
     </main>

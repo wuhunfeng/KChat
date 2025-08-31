@@ -1,7 +1,5 @@
 
 
-
-
 export enum MessageRole {
   USER = 'user',
   MODEL = 'model',
@@ -57,18 +55,36 @@ export interface ChatSession {
   createdAt: number;
   folderId: string | null;
   personaId?: string | null;
+  isArchived?: boolean;
+  isStudyMode?: boolean;
+}
+
+export interface TranslationHistoryItem {
+  id: string;
+  sourceLang: string;
+  targetLang: string;
+  sourceText: string;
+  translatedText: string;
+  timestamp: number;
+  mode: 'natural' | 'literal';
 }
 
 export interface Settings {
   theme: 'light' | 'dark';
   language: 'en' | 'zh';
-  apiKey: string | null;
+  apiKey: string[] | null;
   showSuggestions: boolean;
   defaultModel: string;
   suggestionModel: string;
   autoTitleGeneration: boolean;
   titleGenerationModel: string;
-  personaBuilderModel: string;
+  languageDetectionModel: string;
   defaultSearch: boolean;
+  useSearchOptimizerPrompt: boolean;
   showThoughts: boolean;
+  enableGlobalSystemPrompt: boolean;
+  globalSystemPrompt: string;
+  optimizeFormatting: boolean;
+  thinkDeeper: boolean;
+  apiBaseUrl?: string;
 }

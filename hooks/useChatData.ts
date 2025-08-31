@@ -57,6 +57,17 @@ export const useChatData = ({ settings, isStorageLoaded }: UseChatDataProps) => 
   const handleMoveChatToFolder = useCallback((chatId: string, folderId: string | null) => {
     setChats(p => p.map(c => c.id === chatId ? { ...c, folderId } : c));
   }, []);
+  
+  const handleArchiveChat = useCallback((chatId: string, archive: boolean) => {
+    setChats(p => p.map(c => (c.id === chatId ? { ...c, isArchived: archive } : c)));
+    if (archive && activeChatId === chatId) {
+      setActiveChatId(null);
+    }
+  }, [activeChatId]);
+  
+  const handleToggleStudyMode = useCallback((chatId: string, enabled: boolean) => {
+    setChats(p => p.map(c => c.id === chatId ? { ...c, isStudyMode: enabled } : c));
+  }, []);
 
   const handleSetModelForActiveChat = useCallback((model: string) => {
     if (activeChatId) {
@@ -79,6 +90,8 @@ export const useChatData = ({ settings, isStorageLoaded }: UseChatDataProps) => 
     handleDeleteFolder,
     handleMoveChatToFolder,
     handleSetModelForActiveChat,
-    handleSetCurrentModel
+    handleSetCurrentModel,
+    handleArchiveChat,
+    handleToggleStudyMode,
   };
 };
